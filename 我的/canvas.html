@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<style>
+    *{
+        padding:0;
+        margin:0;
+    }
+    body {
+        text-align: center;
+    }
+    #canvas {
+        background: #ccc;
+        margin-top: 50px;
+    }
+    .div {
+        width:0px;
+        height: 0px;
+        overflow: hidden;
+    }
+</style>
+<body>
+    <canvas width='400px' height='600px' id='canvas'></canvas>
+    <div class="div">
+        <img id='img1' src='images/enemy1_fly_1.png' />
+        <img id='img2' src='images/smallplaneboom.gif' />
+        <img id='img3' src='images/myplane.gif' />
+        <img id='img4' src='images/bullet1.png' />
+        <audio src='audio/arrow_shot.wav' id='audio'></audio>
+    </div>
+    <script>
+        window.onload = function() {
+            const canvas = document.getElementById('canvas');
+            const img1 = document.getElementById('img1')
+            const img2 = document.getElementById('img2')
+            const img3 = document.getElementById('img3')
+            const img4 = document.getElementById('img4')
+            const audio = document.getElementById('audio');
+            // 我方飞机
+            const myPlane = {img3,x: 100, y:canvas.height - 70,speed: 10};
+            // 子弹 
+            const ButtleTotal = [];
+            // 小飞机数组
+            const smallTotal = [];
+            // 键盘按钮默认状态
+            let leftBtn = false;
+            let topBtn = false;
+            let rightBtn = false;
+            let downBtn = false;
+            let spaceBtn = false;
+            // 绘制敌机
+            /*
+            属性 img1
+                左边位置 x,
+                右边位置，y,
+                移动速度 speed,
+            方法： move()
+            */
+            function draw() {
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0,0,canvas.width,canvas.height);
+                for(let i = 0; i < smallTotal.length; i++) {
+                    ctx.drawImage(smallTotal[i].img1,smallTotal[i].x, smallTotal[i].y)
+                }
+                ctx.drawImage(myair.img3,myair.x,myair.y);
+                for(let i = 0; i < ButtleTotal.length; i++) {
+                    ctx.drawImage(ButtleTotal[i].img4,ButtleTotal[i].x,ButtleTotal[i].y)
+                }
+            }
+            // 初始化小飞机
+            function initSmall() {
+                const x = Math.random() * 366;
+                const y = 0;
+                const speed = Math.random() * 3 + 1;
+                smallTotal.push({img1,x,y,speed,life:true,lifeTime:30})
+
+            }
+            setInterval(initSmall,1000);
+            // 移动小飞机
+            function smallMove() {
+                draw()
+                for(let i = 0; i < smallTotal.length; i++) {
+                    if(smallTotal[i].life) {
+                        smallTotal[i].y =  smallTotal[i].y + smallTotal[i].speed;
+                        if(smallTotal[i].y >= canvas.height - 10) {
+                            smallTotal.splice(i,1)
+                        }
+                    }else {
+                        smallTotal[i].lifeTime--;
+                        if(smallTotal[i].lifeTime === 0) {
+                            smallTotal.splice(i,1)
+                        }
+                    }
+                    
+                    
+                }
+            }
+            // 小飞机移动控制
+            loop()
+            function loop() {
+                window.requestAnimationFrame(function(){
+                    // 小飞机移动
+                    smallMove()
+                    // 我方飞机移动
+                    myplaneMove()
+                    // 子弹移动
+                    buttleMove()
+                    // 子弹与飞机碰撞
+                    bull()
+                    // 循环
+                    loop()
+                })
+            }
+            // 控制我方飞机移动
+            function MyAirPlan(myPlane) {
+                const {img3,x, y,life,lifeTime,speed} = myPlane;
+                this.img3 = img3;
+                this.x = x;
+                this.y = y;
+                this.life = life;
+                this.lifeTime = lifeTime;
+                this.speed = speed;
+                // 上移动
+                this.topMove = function(){
+                    this.y -= this.speed;
+                }
+                // 右移动
+                this.rightMove = function(){
+                    this.x += this.speed
+                }
+                // 下移动
+                this.downMove = function(){
+                    this.y += this.speed
+                }
+                // 左移动
+                this.leftMove = function() {
+                    this.x -= this.speed;
+                }
+                // 发射子弹
+                this.shootBullte = function(){
+                    const ButtleItem = {img4,x:this.x + 30,y:this.y + 10,speed:20};
+                    const bullet1 = new Buttle(ButtleItem);
+                    ButtleTotal.push(bullet1)
+
+                }
+            }
+            const myair = new MyAirPlan(myPlane)
+            // 键盘事件
+            document.onkeydown = function(e){
+                const { keyCode } = e;
+                // 上
+                if(keyCode === 38) {
+                    topBtn = true;
+                }
+                // 下
+                if(keyCode === 40) {
+                    downBtn = true;
+                }
+                // 左
+                if(keyCode === 37) {
+                    leftBtn = true;
+                }
+                // 右
+                if(keyCode === 39) {
+                    rightBtn = true;
+                }
+                if(keyCode === 32) {
+                    spaceBtn = true;
+                }
+                return false;
+            }
+            document.onkeyup = function(e){
+                const { keyCode } = e;
+                // 上
+                if(keyCode === 38) {
+                    topBtn = false;
+                }
+                // 下
+                if(keyCode === 40) {
+                    downBtn = false;
+                }
+                // 左
+                if(keyCode === 37) {
+                    leftBtn = false;
+                }
+                // 右
+                if(keyCode === 39) {
+                    rightBtn = false;
+                }
+                if(keyCode === 32) {
+                    spaceBtn = false;
+                }
+            }
+            // 我方飞机移动
+            function myplaneMove() {
+                // 上移动
+                if(topBtn) {
+                    myair.topMove()
+                    if(myair.y <=0) {
+                        myair.y = 0
+                    }
+                }
+                // 右移动
+                if(rightBtn) {
+                    myair.rightMove()
+                    if(myair.x >= canvas.width) {
+                        myair.x = 0
+                    }
+                }
+                // 下移动
+                if(downBtn) {
+                    myair.downMove()
+                    if(myair.y >= canvas.height - 80) {
+                        myair.y = canvas.height - 80
+                    }
+                }
+                // 左移动
+                if(leftBtn) {
+                    myair.leftMove()
+                    if(myair.x <= -66) {
+                        myair.x = canvas.width - 66
+                    }
+                }
+                // 子弹移动
+                if(spaceBtn) {
+                    audio.play()
+                    myair.shootBullte()
+                }
+
+            }
+            // 子弹的对象
+            function Buttle(ButtleItem){
+                const {img4,x,y,speed} = ButtleItem;
+                this.img4 = img4;
+                this.x = x;
+                this.y = y;
+                this.speed = speed;
+                // 移动的方法
+                this.move = function(){
+                    this.y -= this.speed;
+                }
+            }
+             // 子弹移动
+            function buttleMove() {
+                for(let i = 0; i < ButtleTotal.length; i++) {
+                    ButtleTotal[i].move()
+                    if(ButtleTotal[i].y <= 0) {
+                        ButtleTotal.splice(i,1)
+                    }
+                }
+            }
+            // 碰撞
+            function bull() {
+                for(let i = 0; i < smallTotal.length; i++) {
+                    for(let j = 0; j < ButtleTotal.length; j++) {
+                        // 子弹的y
+                        const ButtleY = ButtleTotal[j].y;
+                        // 小飞机的x
+                        const ButtleX = ButtleTotal[j].x;
+                        // 小飞机的左边
+                        const planeleft = smallTotal[i].x;
+                        // 小飞机的右边
+                        const planeRight = smallTotal[i].x + 34;
+                        // 小飞机的Y
+                        const planeY = smallTotal[i].y + 24;
+                        if(ButtleX >= planeleft && ButtleX <= planeRight && ButtleY <= planeY && smallTotal[i].life) {
+                            // 替换飞机
+                            smallTotal[i].img1 = img2;
+                            // 删除子弹
+                            ButtleTotal.splice(j,1)
+                            // 飞机死亡
+                            smallTotal[i].life = false;
+                        }
+                    }
+                }
+            }
+        }
+       
+    </script>
+</body>
+</html>
