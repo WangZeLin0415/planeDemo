@@ -28,12 +28,15 @@
         const audio = document.getElementById('audio');
         const smallTotal = []; // 小飞机的集合
         const bulletTotal = []; // 子弹集合
+        //scroe, shoot
+        const detail = {totalAir:0,shoot:0, life: 3,scroe:0,bossTotal:0}; // 存放总共出现了多少小飞机，totalAir击杀了多少个飞机，killAir飞机类型 small ,boss,得分，生命值
         // 初始化键盘默认值
         let leftBtn = false;
         let rightBtn = false;
         let topBtn = false;
         let downBtn = false;
         let spaceBtn = false;
+        const boxDiv = [];
         // 定义敌军小飞机的对象
         /*
             属性：左边位置： x
@@ -71,6 +74,8 @@
         function smallInit() {
             const smallObj = new SmallAirplane('images/enemy1_fly_1.png',Math.random() * 366, 0,Math.random() * 5 + 2);
             smallTotal.push(smallObj)
+            // 计算产生了多少个小飞机
+            detail.totalAir +=1;
         }
         setInterval(smallInit,1000)
         // 控制小飞机移动
@@ -161,7 +166,8 @@
         }
         const myInitAir = new MyAIrplane('images/myplane.gif',30,500,10)
         // 键盘事件
-        document.body.onkeydown = function(e){
+        document.body.addEventListener('keydown',keyDown) 
+         function keyDown(e){
             const { keyCode } = e;
             // 左
             if(keyCode === 37) {
@@ -180,12 +186,13 @@
                 downBtn = true
             }
             // 空格
-            if(keyCode === 32) {
+            if(keyCode === 32 && detail.life) {
                 spaceBtn = true;
             }
             return false
         }
-        document.body.onkeyup = function(e) {
+        document.body.addEventListener('keyup',keyup)
+        function keyup(e) {
             const { keyCode } = e;
             if(keyCode === 37) {
                 leftBtn = false
@@ -277,11 +284,115 @@
                         smallTotal[j].imgNode.src = 'images/smallplaneboom.gif';
                         // 小飞机死亡
                         smallTotal[j].life = false;
+                        // 计算击杀了多少个敌机
+                        detail.shoot +=1;
+                        // 默认击杀一个小飞机的分数为10分
+                        detail.scroe = detail.shoot * 10;
                     }
                 }
             }
         }
         setInterval(bull,50)
+        // 积分系统
+        function IntegralSystem(detail){
+            const { scroe, shoot, life } = detail;
+            this.boxDiv = document.createElement('div');
+            this.scroeDiv = document.createElement('div');
+            this.shootDiv = document.createElement('div');
+            this.lifeDiv = document.createElement('div');
+            this.scroe = scroe;
+            this.shoot = shoot;
+            this.life = life;
+            this.init = function(){
+                this.boxDiv.style.position = 'absolute';
+                this.boxDiv.style.top = '0px';
+                this.boxDiv.style.left = '0px';
+                this.boxDiv.style.width = '150px';
+                this.boxDiv.style.height = '100px';
+                this.boxDiv.style.background = 'rgba(255,0,0,0.5)';
+                this.boxDiv.style.zIndex = 1;
+                root.appendChild(this.boxDiv);
+                this.scroeDiv.innerHTML = `<span>总得分：<span style='color:orange'>${this.scroe}</span></span>`;
+                this.shootDiv.innerHTML = `<span>击杀数：<span style='color:orange'>${this.shoot}</span></span>`;
+                this.lifeDiv.innerHTML = `<span>生命值：<span style='color:orange'>${this.life}</span></span>`;
+                this.boxDiv.appendChild(this.scroeDiv)
+                this.boxDiv.appendChild(this.shootDiv)
+                this.boxDiv.appendChild(this.lifeDiv)
+                root.style.fontSize = '20px';
+
+
+            }
+            this.init()
+            
+        }
+        // 刷新统计
+        function refls(){
+            const box = new IntegralSystem(detail);
+            boxDiv.push(box)
+            bullMyAir()
+            for(let i = 0; i< boxDiv.length -1; i++) {
+                root.removeChild(boxDiv[i].boxDiv);
+                boxDiv.splice(i,1)
+            }
+        }
+        setInterval(refls,30);
+        // 敌机与我方飞机碰撞
+        // smallTotal 敌机集合
+        // myInitAir 我方飞机
+        function bullMyAir() {
+            for( let i = 0; i < smallTotal.length; i ++) {
+                // 我方飞机的左边
+                const myLeft = parseInt(myInitAir.imgNode.style.left);
+                // 我方飞机的右边
+                const myRight = parseInt(myInitAir.imgNode.style.left) + 66;
+                // 我方飞机的上部
+                const myTop = parseInt(myInitAir.imgNode.style.top);
+                // 敌机的下部
+                const smallDown = parseInt(smallTotal[i].imgNode.style.top) + 24;
+                // // 右边
+                // const smallRight = parseInt(smallTotal[i].imgNode.left) + 34;
+                // 左边
+                const smallLeft = parseInt(smallTotal[i].imgNode.style.left);
+                if(smallTotal[i].life) {
+                    if(smallLeft >= myLeft - 24 && smallLeft <= myRight && myTop <= smallDown) {
+                      
+                       
+                        if( detail.life === 0) {
+                            myInitAir.imgNode.src = 'images/bull.gif';
+                            new GramOver()
+                        }else {
+                              // 小飞机死亡
+                                smallTotal[i].life = false;
+                            // 替换小飞机图片
+                                smallTotal[i].imgNode.src = 'images/smallplaneboom.gif';
+                            // 生命值损失1
+                             // 生命值损失1
+                             detail.life--;
+                        }
+                    }
+                }
+            }
+        }
+        // 游戏结束
+        function GramOver() {
+            this.overDiv = document.createElement('div');
+            this.init = function(){
+                this.overDiv.style.position = 'absolute';
+                this.overDiv.style.top = '0px';
+                this.overDiv.style.left = '0px';
+                this.overDiv.style.zIndex = 2;
+                this.overDiv.style.width = '400px';
+                this.overDiv.style.height = '600px';
+                this.overDiv.innerText = '游戏结束';
+                this.overDiv.style.textAlign = 'center';
+                this.overDiv.style.lineHeight = '600px';
+                this.overDiv.style.color = 'red';
+                this.overDiv.style.fontSize = '40px'
+                root.appendChild(this.overDiv)
+            }
+            this.init()
+           
+        }
     </script>
 </body>
 </html>
