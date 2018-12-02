@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<style>
+    .box{
+        position: relative;
+        margin: 100px;
+    }
+    #div {
+        position: absolute;
+        width: 150px;
+        height: 60px;
+        border-radius: 10px;
+        top: 10px;
+        left: 10px;
+        background: #ccc;
+        opacity: 0.8;
+        z-index: 10;
+        display: none;
+    }
+</style>
+<body>
+    <div class="box">
+        <canvas id='canvas'></canvas>
+        <div id='div'>
+            <div id='div1'></div>
+            <div id='div2'></div>
+        </div>
+    </div>
+  
+    <script>
+        const canvas = document.getElementById('canvas');
+        const  divBox1 = document.getElementById('div');
+        const  titleNode = document.getElementById('div1');
+        const  detailNode = document.getElementById('div2');
+        // 获取画笔
+        const ctx = canvas.getContext('2d')
+        canvas.style.border = '1px solid green';
+        canvas.width = 600;
+        canvas.height = 400;
+        const arr = [30,50,100,40];
+        const sum = 220;
+        const chart = [];
+        let start = 0;
+        for(let i = 0; i < arr.length; i++) {
+            const obj = {};
+            obj.x = canvas.width / 2;
+            obj.y = canvas.height / 2;
+            obj.start = (Math.PI * 2) / sum * start;
+            obj.end = (Math.PI * 2) / sum * (arr[i] + start);
+            obj.CumulativeStart = start;
+            start = start + arr[i];
+            obj.CumulativeEnd = start;
+            obj.r = 150;
+            obj.prent = Number(arr[i] / sum * 100).toFixed(2);
+            obj.count = arr[i];
+            // 默认初始位置的状态为false , 移动后 true
+            obj.type = false;
+            // 累计
+            chart.push(obj);
+        }
+        const color = ['red','green','orange','blue']
+        function draw() {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            for(let i = 0; i < chart.length; i++) {
+                const tt = chart[i]
+                const angle = (tt.end - tt.start) / 2
+                // 计算点在2PI 圆的位置
+                const compute = tt.start + angle;
+                ctx.save()
+                if(tt.type) {
+                    ctx.translate(10 * Math.cos(compute), 10 * Math.sin(compute))
+                }
+                ctx.beginPath()
+                ctx.moveTo(chart[i].x, chart[i].y)
+                ctx.fillStyle = color[i];
+                ctx.arc(tt.x, tt.y, tt.r, tt.start, tt.end);
+                ctx.fill()
+                ctx.restore()
+                // 渲染字体
+                ctx.save()
+                ctx.translate(canvas.width / 2,canvas.height / 2);
+                ctx.beginPath();
+                // 计算出字体渲染的坐标， 字体在每一个扇形二等分点
+                // 默认字体渲染半径为100
+                const r = 100;
+               
+                // x,y 坐标
+                const x = r * Math.cos(compute);
+                const y = r * Math.sin(compute)
+                ctx.fillStyle = "#f9f9f9";//颜色
+            　　ctx.font = "normal 20px 微软雅黑";//字体
+            　　ctx.textBaseline = "middle";//竖直对齐
+            　　ctx.textAlign = "center";//水平对齐　
+            　　ctx.fillText(`${tt.prent}%`, x,y);//绘制文字
+                ctx.restore()
+
+            }
+        }
+        draw()
+        // 判断鼠标在象限的位置
+        function position(dx,dy) {
+            let Q = 0;
+            // 点击事件在一象限则角度为0 - Math.PI / 2
+            if(dx >= 0 && dy >= 0) {
+                Q = Math.atan2(dy,dx)
+            }else if(dx <= 0 && dy >= 0) { // 点击事件在二象限则角度为Math.PI / 2 -Math.PI
+                Q = Math.atan2(dy,dx)
+            }else if(dx <=0 && dy <= 0) {// 点击事件在三象限则角度为 Math.PI -Math.PI / 2 * 3
+                Q = Math.atan2(dy,dx) + Math.PI *2
+            }else if(dx >=0 && dy <= 0) {// 点击事件在四象限则角度为 Math.PI / 2 * 3 - Math.PI * 2
+                Q = Math.atan2(dy,dx) + Math.PI *2
+            }
+            return Q
+        }
+        canvas.addEventListener('click',(e)=>{
+            const x = e.clientX - canvas.getBoundingClientRect().left - 1;
+            const y = e.clientY - canvas.getBoundingClientRect().top -1;
+            const X = canvas.width / 2;
+            const Y = canvas.height / 2;
+            const dx = x - X;
+            const dy = y - Y;
+            const Q = position(dx,dy)
+            for(let i = 0; i < chart.length; i++) {
+                const tt = chart[i]
+                if(Math.sqrt((dx)**2 +(dy)**2) < tt.r) {
+                    if(tt.start <=  Q && tt.end >= Q) {
+                        tt.type = !tt.type;
+                    }else {
+                         tt.type = false;
+                }
+                }
+            }
+           
+            draw()
+        })
+        // 鼠标移动事件
+        canvas.addEventListener('mousemove',(e)=>{
+            const x = e.clientX - canvas.getBoundingClientRect().left - 1;
+            const y = e.clientY - canvas.getBoundingClientRect().top -1;
+            const X = canvas.width / 2;
+            const Y = canvas.height / 2;
+            const dx = x - X;
+            const dy = y - Y;
+            let divBox;
+            if(Math.sqrt(dx**2 + dy**2) <= 150) {
+                const Q = position(dx,dy);
+                for(let i = 0; i < chart.length; i++) {
+                    const tt = chart[i]
+                    if(tt.start <=  Q && tt.end >= Q) {
+                        divBox = new Detail(tt.count,x,y);
+                        divBox1.style.display = 'block'
+                    }
+                   
+                    
+                }
+            }else {
+                divBox1.style.display = 'none'
+            }
+        })
+        // 将饼图的具体数据渲染到div中
+        function Detail(count,x,y) {
+            this.divBox = divBox1;
+            this.titleNode = titleNode;
+            this.detailNode = detailNode;
+            this.x = x + 10;
+            this.y = y + 10;
+            this.count = count;
+            this.init = function(){
+                this.titleNode.innerHTML = `<span>类型：饼图<span>`;
+                this.detailNode.innerHTML = `<span>项数: ${this.count}<span>`;
+                this.divBox.style.left = this.x + 'px';
+                this.divBox.style.top = this.y + 'px';
+                
+            }
+            this.init()
+
+        }
+        
+
+    </script>
+</body>
+</html>
