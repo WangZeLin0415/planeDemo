@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>柱状图</title>
+</head>
+<style>
+    #canvas {
+        margin: auto;
+        border: 1px solid red;
+    }
+</style>
+<body>
+    <canvas id='canvas' width='800' height='600' ></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const W = canvas.width; // 画布的宽
+        const H = canvas.height; // 画布的高
+        const arr = [80,67,90,100,130,89,98]; // 绘制柱状图的数据
+        const length = arr.length;
+        const color = ['red','green','orange','pink','yellow','blue','violet']
+        const max = Math.max.apply(null,arr) // 130
+        const ctx = canvas.getContext('2d');
+        const margin = [30,60,60,60]; // 确定绘画的区域 上右下左
+        const dxAxis = []; //将x轴的横坐标记录下来
+        const total = []; // 将创建的对象装起来
+        // 绘制图形的方法
+        function draw() {
+            // 清空画布
+            ctx.clearRect(0,0,W,H);
+            // 绘制确定的区域
+            ctx.beginPath();
+            ctx.fillStyle = '#fff';
+            ctx.rect(margin[3],margin[0],W-margin[1]-margin[3],H-margin[2]-margin[0]);
+            ctx.fill()
+            // 绘制坐标轴
+            // 绘制 x 轴
+            ctx.save();
+            ctx.translate(margin[3],H-margin[2]-30);
+            // 画x轴坐标
+            xAxis()
+            // 画Y轴坐标
+            yAxis()
+            // 画柱状图
+            rectInit()
+            ctx.restore()
+            
+        }
+        // 画x 轴坐标
+        function xAxis() {
+            ctx.beginPath();
+            ctx.moveTo(0,0);
+            ctx.lineTo(W-margin[1]-margin[3],0);
+            ctx.stroke()
+            // 画刻度
+            // 在坐标轴的0点位置预留 一个刻度的宽度
+            const width = W-margin[1]-margin[3];
+            // 刻度之间的区域的个数
+            const tt = length + 1;
+            // 每个刻度的宽度
+            const widthItem = width / tt;
+            for(let i = 1; i < tt; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i*widthItem,0);
+                ctx.lineTo(i*widthItem,-10);
+                ctx.stroke()
+                // 绘制文字
+                ctx.beginPath()
+                const text1 = '柱状图' + i
+                text(text1,i*widthItem, 20)
+                dxAxis.push(i*widthItem)
+            }
+        }
+        // 画y轴坐标
+        function yAxis(){
+            ctx.beginPath();
+            ctx.moveTo(0,0);
+            ctx.lineTo(0,-(H-margin[2]-margin[0]-30));
+            ctx.stroke();
+            // 画刻度
+            const height = -(H-margin[2]-margin[0]-30);
+            // 设定默认刻度数量为10;
+            const tt = 10;
+            const heightItem = height / tt;
+            for(let i = 1; i < tt; i ++) {
+                ctx.beginPath();
+                ctx.moveTo(0,i*heightItem);
+                ctx.lineTo(10,i*heightItem);
+                ctx.stroke()
+            }
+             // 绘制文字
+             const count = Math.ceil(max / tt);
+            for(let i = 0; i <= tt; i++) {
+               ctx.beginPath();
+               text(i*count,-20,i*heightItem)
+
+            }
+        }
+        // 绘制文字
+           function text(text,x,y) {
+            ctx.fillStyle = "#000000";//颜色
+        　　ctx.font = "normal 20px 微软雅黑";//字体
+        　　ctx.textBaseline = "middle";//竖直对齐
+        　　ctx.textAlign = "center";//水平对齐　
+        　　ctx.fillText(text, x,y);//绘制文字
+        }
+        // 画柱状图方法
+        function rectInit() {
+            for(let i = 0; i < dxAxis.length; i++) {
+               
+                const h = -(H-margin[2]-margin[0]-30) / 130 * arr[i]
+                const obj = {x:dxAxis[i],y:-1,color:color[i],ctx,w:30,h}
+                const tt = new Rect(obj)
+                total.push(tt)
+            }
+        }
+        // 将每个绘制的柱状图定制成对象
+        function Rect(obj){
+            const {x,y,color,ctx,w,h } = obj;
+            this.x = x;
+            this.y = y;
+            this.ctx = ctx;
+            this.w = w;
+            this.h = h;
+            this.color = color;
+            this.init = function(){
+                this.ctx.beginPath();
+                this.ctx.fillStyle = this.color;
+                this.ctx.rect(this.x - this.w / 2, this.y, this.w, this.h);
+                this.ctx.fill()
+            }
+            this.init();
+            this.click = function() { // 计算出每个图形的区域大小
+            // margin[3],H-margin[2]-30
+                const compute = {};
+                compute.left = this.x + margin[3] - this.w /2;
+                compute.right = this.x + this.w /2 + margin[3];
+                compute.top = this.h + H-margin[2]-30;
+                compute.bottom = this.y + H-margin[2]-30;
+            
+                return compute;
+            }
+        }
+        draw()
+        canvas.onclick = function(e) {
+            const x = e.clientX - canvas.getBoundingClientRect().left -1;
+            const y = e.clientY - canvas.getBoundingClientRect().top -1;
+            total.forEach((item,index)=>{
+               const obj = item.click()
+               // 判断点击位置是否在柱状图区域
+               if( x >= obj.left && x <= obj.right && y >= obj.top && y <= obj.bottom) {
+                   alert('柱状图'+(index+1))
+               }
+            })
+        }
+    </script>
+</body>
+</html>
