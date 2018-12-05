@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<style>
+    * {
+        padding: 0;
+        margin: 0;
+    }
+    body {
+        text-align: center;
+        padding-top: 50px;
+    }
+    #canvas {
+        background:#ccc;
+    }
+</style>
+<body>
+    <canvas width=800 height=400 id='canvas'></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        // 数据 'Ⅲ'为占比
+        const data = [
+            {type:'风险',month:'1月','Ⅰ':10,'Ⅱ': 20, 'Ⅲ': 30,ty:50,plan:23},
+            {type:'风险',month:'2月','Ⅰ':10,'Ⅱ': 20, 'Ⅲ': 30,ty:67,plan:14},
+            {type:'风险',month:'3月','Ⅰ':10,'Ⅱ': 20, 'Ⅲ': 56,ty:10,plan:34},
+            {type:'风险',month:'4月','Ⅰ':10,'Ⅱ': 20, 'Ⅲ': 30,ty:80,plan:15},
+            {type:'风险',month:'5月','Ⅰ':10,'Ⅱ': 20, 'Ⅲ': 30,ty:90,plan:32},
+            {type:'风险',month:'6月','Ⅰ':10,'Ⅱ': 20, 'Ⅲ': 30,ty:20,plan:34},
+            {type:'风险',month:'7月','Ⅰ':10,'Ⅱ': 20, 'Ⅲ': 30,ty:34,plan:56},
+            {type:'风险',month:'8月','Ⅰ':10,'Ⅱ': 20, 'Ⅲ': 30,ty:70,plan:47},
+            {type:'风险',month:'9月','Ⅰ':10,'Ⅱ': 20, 'Ⅲ': 30,ty:78,plan:54},
+            {type:'风险',month:'10月','Ⅰ':10,'Ⅱ': 20, 'Ⅲ': 30,ty:34,plan:45},
+            {type:'风险',month:'11月','Ⅰ':10,'Ⅱ': 20, 'Ⅲ': 30,ty:50,plan:29},
+            {type:'风险',month:'12月','Ⅰ':10,'Ⅱ': 20, 'Ⅲ': 30,ty:65,plan:34},
+        ];
+        const margin = [60,60,60,60]; // 设定图形化的区域距离边的距离 上右下左
+        // 确定y坐标的最大值
+        let maxY = 0;
+        data.forEach((item)=>{
+            for(const key in item) {
+                if(typeof item[key] === 'number') {
+                    if(Math.abs(item[key]) > maxY) {
+                        maxY =  item[key]
+                    }
+                }
+            }
+        })
+        const tt = new Chart(data,maxY,margin)
+        const color = ['red','green','orange'];
+        /*
+            第一个参数为画的图形的分类
+            第二个参数为化的图形的类型 interval 为柱状图， line为线图，point为点图
+            第三个参数为x轴的坐标类型即x轴的标注文字的依据
+        */
+        tt.detailData(['interval','line','point'],'month').interval(['Ⅰ','Ⅱ','Ⅲ'],color).point(['ty','plan'],['rgb(255, 0, 128)','Violet']).line(['ty','plan'],['rgb(255, 0, 128)','Violet'])
+        // 定义画图的对象
+        function Chart(data,max,margin) {
+            this.data = data;
+            this.max = max;
+            this.top = margin[0];
+            this.right = margin[1];
+            this.bottom = margin[2];
+            this.left = margin[3];
+            this.w = canvas.width - this.right - this.left;
+            this.h = canvas.height - this.top - this.bottom;
+            this.y = 6 // 定义y轴刻度为6个
+            this.dy = -this.h / this.y;;
+            // 每个轴刻度对应的数据长度
+            this.countY = Math.ceil(this.max / 6);
+            // 数据处理
+            this.detailData = function(status,x) {
+                this.count = this.data.length;
+                this.dx = this.w / (this.count + 1)
+                this.status = status;
+                this.x = x;
+                return this;
+            }
+            // 定义画柱状图
+            this.interval = function(intervalX,intervalColor) {
+                this.intervalX = intervalX;
+                this.intervalColor = intervalColor;
+                this.draw()
+                return this;
+           
+            }
+            // 定义画折线图
+            this.line = function(lineX,lineColor) {
+                this.lineX = lineX;
+                this.lineColor = lineColor;
+                this.draw();
+                return this;
+            }
+            // 定义画点
+            this.point = function(pointX,pointColor) {
+                this.pointX = pointX;
+                this.pointColor = pointColor;
+                this.draw();
+                return this;
+            }
+            // 定义画饼图
+            this.area = function() {
+               
+            }
+            // 坐标轴
+            this.axis = function(x,y) {
+                // 画x轴
+                ctx.save();
+                ctx.translate(this.left,this.h+this.bottom)
+                ctx.beginPath();
+                ctx.moveTo(0,0);
+                ctx.lineTo(this.w,0)
+                ctx.stroke()
+                // 绘制x刻度
+                for(let i = 1; i <= this.count; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(i*this.dx,0);
+                    ctx.lineTo(i*this.dx,10);
+                    ctx.stroke()
+                    // 绘制文字
+                    this.text(this.data[i-1][this.x],i*this.dx,30)
+                }
+                // 画y轴
+                ctx.beginPath();
+                ctx.moveTo(0,0);
+                ctx.lineTo(0,- this.h);
+                ctx.stroke()
+                // 绘制y轴刻度
+                for(let i = 0; i <= this.y; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(0,i*this.dy);
+                    ctx.lineTo(-10,i*this.dy);
+                    ctx.stroke();
+                    // 绘制文字
+                    this.text(i * this.countY, -30,i*this.dy)
+                }
+                ctx.restore()
+            }
+            // 绘制图画
+            this.draw = function() {
+                ctx.clearRect(0,0,canvas.width,canvas.height);
+                ctx.save()
+                ctx.beginPath();
+                ctx.fillStyle = 'transparent';
+                ctx.rect(this.left,this.top,this.w,this.h);
+                ctx.fill()
+                // 绘制坐标轴
+                this.axis()
+                ctx.restore()
+                // 画柱状图
+                ctx.save();
+                ctx.translate(this.left,this.h+this.bottom)
+                const exe = this.status.includes('interval');
+                if(exe) {
+                    for(let i = 0; i < this.data.length; i++) {
+                        const a = this.data[i]
+                        for(let j = 0; j < this.intervalX.length; j++) {
+                            const b = this.intervalX[j];
+                            // 间隔
+                            const d = this.intervalX.length;
+                            const t = (this.dx - 10) / d;
+                            const y = a[b] / this.countY * this.dy;
+
+                            ctx.beginPath();
+                            ctx.fillStyle = this.intervalColor[j];
+                            ctx.rect((i+1)*this.dx + t *(j - d/2),0,t,y);
+                            ctx.fill()
+
+                        }
+                    }
+                }
+                // 划线
+                if(this.status.includes('line')){
+                    if(this.lineX) {
+                        for(let j = 0; j < this.lineX.length; j++) {
+                            const b = this.lineX[j];
+                            ctx.beginPath();
+                            ctx.strokeStyle = this.lineColor[j];
+                            ctx.lineWidth = 1;
+                            ctx.lineJoin="round";
+                            ctx.moveTo(this.dx,this.data[0][b] / this.countY *this.dy)
+                            for(let i = 1; i < this.data.length; i++) {
+                                const a = this.data[i];
+                                const y = a[b] / this.countY * this.dy;
+                                ctx.lineTo(this.dx*(i+1),y);
+                            }
+                            ctx.stroke()
+                        }
+                    }
+                }
+                // 画点
+                if(this.status.includes('point')) {
+                    if(this.pointX){
+                        for(let j = 0; j < this.pointX.length; j++) {
+                            const b = this.pointX[j];
+                            for(let i = 0; i < this.data.length; i++) {
+                                const a = this.data[i];
+                                const x = this.dx * (i+1);
+                                const y = a[b] / this.countY * this.dy;
+                                ctx.beginPath();
+                                ctx.fillStyle = this.pointColor[j];
+                                ctx.arc(x, y, 4, 0, Math.PI * 2);
+                                ctx.fill()
+
+                               
+                            }
+                        }
+                    }
+                }
+                ctx.restore()
+               
+               
+            }
+            // 绘制文字
+            this.text = function(text,x,y) {
+                ctx.fillStyle = "#000000";//颜色
+            　　ctx.font = "normal 20px 微软雅黑";//字体
+            　　ctx.textBaseline = "middle";//竖直对齐
+            　　ctx.textAlign = "center";//水平对齐　
+            　　ctx.fillText(text, x,y);//绘制文字
+            }
+        }
+
+    </script>
+</body>
+</html>
